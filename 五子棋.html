@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五子棋</title>
+    <style>
+        .board {
+            display: grid;
+            grid-template-columns: repeat(15, 40px);
+            grid-template-rows: repeat(15, 40px);
+            gap: 1px;
+            background-color: #aaa;
+            margin-bottom: 20px;
+        }
+
+        .cell {
+            background-color: #eee;
+            border: 1px solid #ccc;
+        }
+
+        .cell:hover {
+            background-color: #ddd;
+        }
+
+        .piece {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            margin: 2px;
+        }
+
+        .black-piece {
+            background-color: #000;
+        }
+
+        .white-piece {
+            background-color: #fff;
+        }
+
+        .message {
+            font-weight: bold;
+        }
+
+        .reset-button {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="board"></div>
+    <div class="message"></div>
+    <button class="reset-button">重新开始</button>
+</body>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const board = document.querySelector('.board');
+        const message = document.querySelector('.message');
+        const resetButton = document.querySelector('.reset-button');
+
+        const PlayerType = {
+            PLAYER: 'player',
+            COMPUTER: 'computer',
+        };
+
+        let currentPlayer = PlayerType.PLAYER;
+        let isGameOver = false;
+        let boardState = [];
+
+        function createBoard() {
+            board.innerHTML = '';
+
+            for (let row = 0; row < 15; row++) {
+                boardState[row] = [];
+                for (let col = 0; col < 15; col++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.addEventListener('click', handleCellClick);
+                    board.appendChild(cell);
+                    boardState[row][col] = '';
+                }
+            }
+        }
+
+        function handleCellClick(event) {
+            if (isGameOver) {
+                return;
+            }
+
+            const cell = event.target;
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+
+            if (boardState[row][col] !== '') {
+                return;
+            }
+
+            placePiece(row, col, currentPlayer);
+
+            if (checkWin(row, col)) {
+                endGame(currentPlayer);
+                return;
+            }
+
+            switchPlayer();
+
+            if (currentPlayer === PlayerType.COMPUTER && !isGameOver) {
+                makeComputerMove();
+            }
+        }
+
+        function placePiece(row, col, player) {
+            const piece = document.createElement('div');
+            piece.classList.add('piece');
+            piece.classList.add(player === PlayerType.PLAYER ? 'black-piece' : 'white-piece');
+            const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+            cell.appendChild(piece);
+            boardState[row][col] = player;
+        }
+
+        function switchPlayer() {
+            currentPlayer = currentPlayer === PlayerType.PLAYER ? PlayerType.COMPUTER : PlayerType.PLAYER;
+        }
+
+        function checkWin(row, col) {
+            const directions = [
+                [1, 0],
+                [0, 1],
+                [1, 1],
+                [1, -1]
+            ];
+
+            const player = boardState[row][col];
+            for (const direction of directions) {
+                const [dx, dy] = direction;
+                let count = 1;
+
+                // Check for consecutive pieces in both directions
+                count += checkDirection(row, col, dx, dy, player);
+                count += checkDirection(row, col, -dx, -dy, player);
+
+                if (count >= 5) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        function checkDirection(row, col, dx, dy, player) {
+            let count = 0;
+            let newRow = row + dx;
+            let newCol = col + dy;
+
+            while (isValidPosition(newRow, newCol) && boardState[newRow][newCol] === player) {
+                count++;
+                newRow += dx;
+                newCol += dy;
+            }
+
+            return count;
+        }
+
+        function isValidPosition(row, col) {
+            return row >= 0 && row < 15 && col >= 0 && col < 15;
+        }
+
+        function makeComputerMove() {
+            // Generate a random move for the computer
+            let row, col;
+            do {
+                row = Math.floor(Math.random() * 15);
+                col = Math.floor(Math.random() * 15);
+            } while (boardState[row][col] !== '');
+
+            placePiece(row, col, currentPlayer);
+
+            if (checkWin(row, col)) {
+                endGame(currentPlayer);
+                return;
+            }
+
+            switchPlayer();
+        }
+
+        function endGame(winner) {
+            isGameOver = true;
+            message.textContent = winner === PlayerType.PLAYER ? 'You win!' : 'Computer wins!';
+        }
+
+        function resetGame() {
+            currentPlayer = PlayerType.PLAYER;
+            isGameOver = false;
+            boardState = [];
+            message.textContent = '';
+            createBoard();
+        }
+
+        resetButton.addEventListener('click', resetGame);
+
+        createBoard();
+    });
+</script>
+
+</html>
